@@ -1,30 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Web;
-using System.Web.Http;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Formatting;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using ManyWho.Flow.SDK;
-using ManyWho.Flow.SDK.Utils;
-using ManyWho.Flow.SDK.Social;
-using ManyWho.Flow.SDK.Security;
-using ManyWho.Flow.SDK.Describe;
-using ManyWho.Flow.SDK.Draw.Elements.UI;
-using ManyWho.Flow.SDK.Draw.Elements.Type;
-using ManyWho.Flow.SDK.Draw.Elements.Config;
-using ManyWho.Flow.SDK.Draw.Elements.Group;
-using ManyWho.Flow.SDK.Run.Elements.UI;
-using ManyWho.Flow.SDK.Run.Elements.Type;
-using ManyWho.Flow.SDK.Run.Elements.Config;
-using ManyWho.Service.Docordo.Utils;
-
-/*!
+﻿/*!
 
 Copyright 2013 Manywho, Inc.
 
@@ -42,22 +16,43 @@ permissions and limitations under the License.
 
 namespace ManyWho.Service.Docordo
 {
-    public class DocordoServiceSingleton
-    {        
-        public const String SERVICE_ACTION_CREATE_MATTER = "newmatter";
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
+    using System.Threading.Tasks;
+    using DocordoAPI.Model.Domain;
+    using ManyWho.Flow.SDK;
+    using ManyWho.Flow.SDK.Describe;
+    using ManyWho.Flow.SDK.Draw.Elements.Type;
+    using ManyWho.Flow.SDK.Run.Elements.Config;
+    using ManyWho.Flow.SDK.Run.Elements.Type;
+    using ManyWho.Flow.SDK.Security;
+    using ManyWho.Flow.SDK.Social;
+    using ManyWho.Flow.SDK.Utils;
+    using Newtonsoft.Json;
 
+    public class DocordoServiceSingleton
+    {
+        public const String SERVICE_ACTION_LOGIN = "login";
+
+        public const String SERVICE_VALUE_DOCORDO_DOMAIN = "DocordoDomain";
         public const String SERVICE_VALUE_DOCORDO_USERNAME = "DocordoUsername";
         public const String SERVICE_VALUE_DOCORDO_PASSWORD = "DocordoPassword";
-        public const String SERVICE_VALUE_DOCORDO_DOMAIN = "DocordoDomain";
+        
 
         public const String SERVICE_VALUE_DOCORDO_EBIKKO_SESSION_ID = "DocordoEbikkoSessionId";
-        public const String SERVICE_VALUE_DOCORDO_COOKIE_JSESSIONID = "DocordoCookieJSESSIONID";       
-
-        public const String SERVICE_INPUT_DESCRIPTION = "Description";
-
-        public const String SERVICE_OUTPUT_ID = "Id";        
+        public const String SERVICE_VALUE_DOCORDO_COOKIE_JSESSIONID = "DocordoCookieJSESSIONID";
+       
+        
 
         private static DocordoServiceSingleton docordoServiceSingleton;
+
+        public const string SERVICE_INPUT_RECORD_NUMBER = "RecordNumber";
+        public const string SERVICE_INPUT_MATTER_DESCRIPTION = "MatterDescription";
+
+        public const String SERVICE_OUTPUT_ID = "Id";
 
         private DocordoServiceSingleton()
         {
@@ -79,91 +74,56 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public DescribeServiceResponseAPI Describe(DescribeServiceRequestAPI describeServiceRequest)
         {
-            System.Diagnostics.Trace.Indent();
-            System.Diagnostics.Trace.TraceInformation("public DescribeServiceResponseAPI Describe");
+            System.Diagnostics.Trace.TraceInformation("@start - public DescribeServiceResponseAPI Describe(DescribeServiceRequestAPI describeServiceRequest)");
 
             if (describeServiceRequest == null)
             {
                 throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "DescribeServiceRequest object cannot be null.");
             }
-
-            DescribeServiceInstallResponseAPI describeServiceInstallResponse = null;
+           
             DescribeServiceActionResponseAPI describeServiceAction = null;
             DescribeServiceResponseAPI describeServiceResponse = null;
-
-            string docordoDomain = null;
-            string docordoUsername = null;
-            string docordoPassword = null;
-
-            string docordoCookieJSESSIONID = null;
-            string docordoEbikkoSessionId = null;
-
-            System.Diagnostics.Trace.TraceInformation("// We do not require configuration values in the describe call as this is a refresh type operation");
-            if (describeServiceRequest.configurationValues != null && describeServiceRequest.configurationValues.Count > 0)
-            {
-                System.Diagnostics.Trace.TraceInformation("// If the configuration values are provided, then all of them are required");                
-                docordoDomain = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_DOMAIN, describeServiceRequest.configurationValues, true);
-                docordoUsername = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_USERNAME, describeServiceRequest.configurationValues, true);
-                docordoPassword = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_PASSWORD, describeServiceRequest.configurationValues, true);
-
-                DocordoAPI.Model.Domain.DocordoLoginResponse docordoLoginResponse = DocordoAPI.DocordoService.GetInstance().Login(docordoDomain, docordoUsername, docordoPassword);
-                docordoCookieJSESSIONID = docordoLoginResponse.CookieJSESSIONID;
-                docordoEbikkoSessionId = docordoLoginResponse.EbikkoSessionId;
-            }
-
+            
             System.Diagnostics.Trace.TraceInformation("// Start building the describe service response so the caller knows what they need to provide to use this service");
             describeServiceResponse = new DescribeServiceResponseAPI();
             describeServiceResponse.culture = new CultureAPI();
             describeServiceResponse.culture.country = "US";
             describeServiceResponse.culture.language = "EN";
             describeServiceResponse.culture.variant = null;
-            describeServiceResponse.exposesTables = true;
-            describeServiceResponse.exposesLogic = true;
-            describeServiceResponse.exposesViews = false;
-            describeServiceResponse.providesIdentity = true; 
+
+            describeServiceResponse.providesLogic = true;
+
+            describeServiceResponse.providesDatabase = false;            
+            describeServiceResponse.providesViews = false;
+            describeServiceResponse.providesIdentity = true;
             describeServiceResponse.providesSocial = false;
+            
+            System.Diagnostics.Trace.TraceInformation("// If the user has provided these values as part of a re-submission, we can then go about configuring the rest of the service");
+            
+            describeServiceResponse.actions = new List<DescribeServiceActionResponseAPI>();
 
-            System.Diagnostics.Trace.TraceInformation("// Create the main configuration values");            
-            describeServiceResponse.configurationValues = new List<DescribeValueAPI>();
-            describeServiceResponse.configurationValues.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_DOMAIN, docordoDomain, true));
-            describeServiceResponse.configurationValues.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_USERNAME, docordoUsername, true));
-            describeServiceResponse.configurationValues.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_PASSWORD, SERVICE_VALUE_DOCORDO_PASSWORD, docordoPassword, true));
+            System.Diagnostics.Trace.TraceInformation("// We have another message available under this service for creating simple tasks with no async");
+            describeServiceAction = new DescribeServiceActionResponseAPI();
+            describeServiceAction.uriPart = SERVICE_ACTION_LOGIN;
+            describeServiceAction.developerName = "New Matter";
+            describeServiceAction.developerSummary = "This action creates a matter in docordo.";
+            describeServiceAction.isViewMessageAction = false;
+            describeServiceAction.pageResponse = null;
 
-            describeServiceResponse.configurationValues.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_COOKIE_JSESSIONID, docordoCookieJSESSIONID, false));
-            describeServiceResponse.configurationValues.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_EBIKKO_SESSION_ID, docordoEbikkoSessionId, false));
+            System.Diagnostics.Trace.TraceInformation("// Create the inputs for the task creation");
+            describeServiceAction.serviceInputs = new List<DescribeValueAPI>();
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_DOMAIN, null, true));
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_USERNAME, null, true));
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_PASSWORD, null, true));
 
-            System.Diagnostics.Trace.TraceInformation("// If the user has provided these values as part of a re-submission, we can then go about configuring the rest of the service");                       
-            if (!string.IsNullOrWhiteSpace(docordoDomain) && !string.IsNullOrWhiteSpace(docordoUsername) && !string.IsNullOrWhiteSpace(docordoPassword))
-            {
-                describeServiceResponse.actions = new List<DescribeServiceActionResponseAPI>();
+            System.Diagnostics.Trace.TraceInformation("// Create the outputs for the task creation");
+            describeServiceAction.serviceOutputs = new List<DescribeValueAPI>();
+            describeServiceAction.serviceOutputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_OUTPUT_ID, null, false));
 
-                System.Diagnostics.Trace.TraceInformation("// We have another message available under this service for creating simple tasks with no async");
-                describeServiceAction = new DescribeServiceActionResponseAPI();
-                describeServiceAction.uriPart = SERVICE_ACTION_CREATE_MATTER;
-                describeServiceAction.developerName = "New Matter";
-                describeServiceAction.developerSummary = "This action creates a matter in docordo.";
-                describeServiceAction.isViewMessageAction = false;
-                describeServiceAction.pageResponse = null;
-
-                System.Diagnostics.Trace.TraceInformation("// Create the inputs for the task creation");
-                describeServiceAction.serviceInputs = new List<DescribeValueAPI>();
-                describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_INPUT_DESCRIPTION, null, true));
-
-                System.Diagnostics.Trace.TraceInformation("// Create the outputs for the task creation");
-                describeServiceAction.serviceOutputs = new List<DescribeValueAPI>();
-                describeServiceAction.serviceOutputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_OUTPUT_ID, null, false));
-
-                System.Diagnostics.Trace.TraceInformation("// Add the task action to the response");
-                describeServiceResponse.actions.Add(describeServiceAction);
-
-                System.Diagnostics.Trace.TraceInformation("// We now create the associated things for this service that we'd like to install into the manywho account");
-                describeServiceInstallResponse = new DescribeServiceInstallResponseAPI();
-                describeServiceInstallResponse.types = new List<TypeElementRequestAPI>();
-                describeServiceInstallResponse.types = DocordoDataSingleton.GetInstance().GetTypeElements(docordoDomain, docordoUsername, docordoPassword, docordoEbikkoSessionId, docordoCookieJSESSIONID);
-
-                System.Diagnostics.Trace.TraceInformation("// Assign the installation object to our main describe response");
-                describeServiceResponse.install = describeServiceInstallResponse;
-            }
+            System.Diagnostics.Trace.TraceInformation("// Add the task action to the response");
+            describeServiceResponse.actions.Add(describeServiceAction);
+                
+            
 
             return describeServiceResponse;
         }
@@ -173,29 +133,54 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public List<TypeElementBindingAPI> DescribeTables(ObjectDataRequestAPI objectDataRequestAPI)
         {
-            List<TypeElementBindingAPI> typeElementBindings = null;          
-
-            return typeElementBindings;
+            System.Diagnostics.Trace.TraceInformation("@start - public List<TypeElementBindingAPI> DescribeTables(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            throw new NotImplementedException();
         }
 
         /// <summary>
         /// This method returns the list of fields for the specified object and org being queried.
         /// </summary>
-        public List<TypeElementFieldBindingAPI> DescribeFields(ObjectDataRequestAPI objectDataRequestAPI)
+        public List<TypeElementPropertyBindingAPI> DescribeFields(ObjectDataRequestAPI objectDataRequestAPI)
         {
-            List<TypeElementFieldBindingAPI> typeElementFieldBindings = null;           
-
-            return typeElementFieldBindings;
+            System.Diagnostics.Trace.TraceInformation("@start - public List<TypeElementPropertyBindingAPI> DescribeFields(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));            
+            throw new NotImplementedException();
         }
 
         /// <summary>
         /// This method is used to invoke particular messages on the service.
         /// </summary>
         public async Task<ServiceResponseAPI> Invoke(IAuthenticatedWho authenticatedWho, String action, ServiceRequestAPI serviceRequest)
-        {            
+        {
+            System.Diagnostics.Trace.TraceInformation("@start - public async Task<ServiceResponseAPI> Invoke(IAuthenticatedWho authenticatedWho, String action, ServiceRequestAPI serviceRequest)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(authenticatedWho));
+            Trace.TraceInformation(JsonConvert.SerializeObject(action));
+            Trace.TraceInformation(JsonConvert.SerializeObject(serviceRequest));
+
             ServiceResponseAPI serviceResponse = null;
 
-            return serviceResponse;
+            if (action == null || action.Trim().Length == 0)
+            {
+                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "Action cannot be null or blank.");
+            }
+
+            if (serviceRequest == null)
+            {
+                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "ServiceRequest cannot be null.");
+            }
+
+            if (action.Equals(SERVICE_ACTION_LOGIN, StringComparison.InvariantCultureIgnoreCase) == true)
+            {
+                serviceResponse = await SalesforceInvokeSingleton.GetInstance().InvokeCreateMatter(authenticatedWho, serviceRequest);
+            }
+            else
+            {
+                // We don't have an action by that name
+                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "Action cannot be found for name: " + action);
+            }
+
+            return serviceResponse;            
         }
 
         /// <summary>
@@ -203,41 +188,10 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public ObjectDataResponseAPI Save(IAuthenticatedWho authenticatedWho, ObjectDataRequestAPI objectDataRequestAPI)
         {
-            ObjectDataResponseAPI objectDataResponseAPI = null;
-
-            string docordoDomain = null;
-            string username = null;
-            string password = null;
-            string ebikkoSessionId = null;
-            string ebikkoCookieJSESSIONID = null;
-            
-            if (objectDataRequestAPI == null || objectDataRequestAPI.configurationValues == null || objectDataRequestAPI.configurationValues.Count == 0)
-            {
-                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "ObjectDataRequest.ConfigurationValues cannot be null or empty.");
-            }
-
-            // Get the configuration values out that are needed to save data to docordo.com
-            docordoDomain = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_DOMAIN, objectDataRequestAPI.configurationValues, true);
-            username = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_USERNAME, objectDataRequestAPI.configurationValues, true);
-            password = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_PASSWORD, objectDataRequestAPI.configurationValues, true);
-            ebikkoSessionId = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_EBIKKO_SESSION_ID, objectDataRequestAPI.configurationValues, true);
-            ebikkoCookieJSESSIONID = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_COOKIE_JSESSIONID, objectDataRequestAPI.configurationValues, true);
-            
-
-            // We only perform the save if there's actually something to save!
-            if (objectDataRequestAPI.objectData != null && objectDataRequestAPI.objectData.Count > 0)
-            {
-                // Save the data back
-            }
-            
-            // Create the object data response object
-            objectDataResponseAPI = new ObjectDataResponseAPI();
-            // TODO: Should really get the culture that the authenticated user is running under
-            objectDataResponseAPI.culture = objectDataRequestAPI.culture;
-            // We can do this as we've applied the changes to the request objects
-            objectDataResponseAPI.objectData = objectDataRequestAPI.objectData;
-
-            return objectDataResponseAPI;
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI Save(IAuthenticatedWho authenticatedWho, ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(authenticatedWho));
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -245,42 +199,9 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public ObjectDataResponseAPI Load(ObjectDataRequestAPI objectDataRequestAPI)
         {
-            ObjectDataResponseAPI objectDataResponseAPI = null;
-            ObjectDataTypeAPI objectDataType = null;
-            
-            string docordoDomain = null;
-            string username = null;
-            string password = null;
-            string ebikkoSessionId = null;
-            string ebikkoCookieJSESSIONID = null;
-            
-            if (objectDataRequestAPI == null || objectDataRequestAPI.configurationValues == null || objectDataRequestAPI.configurationValues.Count == 0)
-            {
-                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "ObjectDataRequest.ConfigurationValues cannot be null or empty.");
-            }
-            
-            // Get the configuration values out that are needed to save data to docordo.com
-            docordoDomain = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_DOMAIN, objectDataRequestAPI.configurationValues, true);
-            username = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_USERNAME, objectDataRequestAPI.configurationValues, true);
-            password = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_PASSWORD, objectDataRequestAPI.configurationValues, true);
-            ebikkoSessionId = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_EBIKKO_SESSION_ID, objectDataRequestAPI.configurationValues, true);
-            ebikkoCookieJSESSIONID = SettingUtils.GetConfigurationValue(SERVICE_VALUE_DOCORDO_COOKIE_JSESSIONID, objectDataRequestAPI.configurationValues, true);
-
-            // Create a new response object to house our results
-            objectDataResponseAPI = new ObjectDataResponseAPI();
-
-            // TODO: Should really get the culture that the authenticated user is running under
-            objectDataResponseAPI.culture = objectDataRequestAPI.culture;
-            // We can do this as we've applied the changes to the request objects
-            objectDataResponseAPI.objectData = objectDataRequestAPI.objectData;
-
-            // We take the object data type information to give us the properties definition as defined by the calling flow
-            objectDataType = objectDataRequestAPI.objectDataType;
-
-            // Do the actual selection to populate one or many of these object types
-            objectDataResponseAPI.objectData = new List<ObjectAPI>();
-
-            return objectDataResponseAPI;
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI Load(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));            
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -288,8 +209,18 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public ObjectDataResponseAPI GetUserInAuthorizationContext(IAuthenticatedWho authenticatedWho, ObjectDataRequestAPI objectDataRequestAPI)
         {
-            ObjectDataResponseAPI objectDataResponseAPI = null;
-                        
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI GetUserInAuthorizationContext(IAuthenticatedWho authenticatedWho, ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(authenticatedWho));
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+
+            ObjectAPI userObject = CreateUserObject(authenticatedWho);
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_STATUS,
+                authenticatedWho.UserId == ManyWhoConstants.AUTHENTICATED_USER_PUBLIC_USER_ID ?
+                    ManyWhoConstants.AUTHORIZATION_STATUS_NOT_AUTHORIZED : ManyWhoConstants.AUTHORIZATION_STATUS_AUTHORIZED));
+
+            ObjectDataResponseAPI objectDataResponseAPI = new ObjectDataResponseAPI();
+            objectDataResponseAPI.objectData.Add(userObject);
+
             return objectDataResponseAPI;
         }
 
@@ -298,80 +229,69 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public ObjectDataResponseAPI LoadUserAttributes(ObjectDataRequestAPI objectDataRequestAPI)
         {
-            ObjectDataResponseAPI objectDataResponseAPI = null;
-            List<ObjectAPI> attributeObjects = null;
-
-            // Populate the list of available attributes
-            attributeObjects = new List<ObjectAPI>();
-            //attributeObjects.Add(DescribeUtils.CreateAttributeObject("Colleagues", SERVICE_VALUE_COLLEAGUES));
-
-            // Send the attributes back in the object data
-            objectDataResponseAPI = new ObjectDataResponseAPI();
-            objectDataResponseAPI.objectData = attributeObjects;
-
-            return objectDataResponseAPI;
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI LoadUserAttributes(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            return new ObjectDataResponseAPI();
         }
 
         /// <summary>
         /// This method is used to load the attributes that are available for group authentication queries.
         /// </summary>
         public ObjectDataResponseAPI LoadGroupAttributes(ObjectDataRequestAPI objectDataRequestAPI)
-        {            
-            ObjectDataResponseAPI objectDataResponseAPI = null;
-            List<ObjectAPI> attributeObjects = null;
-
-            // Populate the list of available attributes
-            attributeObjects = new List<ObjectAPI>();
-            //attributeObjects.Add(DescribeUtils.CreateAttributeObject("Members", "MEMBERS"));
-            //attributeObjects.Add(DescribeUtils.CreateAttributeObject("Owners", "OWNERS"));
-
-            // Send the attributes back in the object data
-            objectDataResponseAPI = new ObjectDataResponseAPI();
-            objectDataResponseAPI.objectData = attributeObjects;
-
-            return objectDataResponseAPI;
+        {
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI LoadGroupAttributes(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            return new ObjectDataResponseAPI();
         }
 
         /// <summary>
         /// This method is used to load the list of users that are available to select from.
         /// </summary>
         public ObjectDataResponseAPI LoadUsers(ObjectDataRequestAPI objectDataRequestAPI)
-        {            
-            ObjectDataResponseAPI objectDataResponseAPI = null;            
-
-            return objectDataResponseAPI;
+        {
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI LoadUsers(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            throw new NotImplementedException();
         }
 
         /// <summary>
         /// This method is used to load the list of groups that are available to select from.
         /// </summary>
         public ObjectDataResponseAPI LoadGroups(ObjectDataRequestAPI objectDataRequestAPI)
-        {            
-            ObjectDataResponseAPI objectDataResponseAPI = null;            
-
-            return objectDataResponseAPI;
+        {
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI LoadGroups(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
+            throw new NotImplementedException();
         }
 
         public ObjectDataResponseAPI Delete(ObjectDataRequestAPI objectDataRequestAPI)
         {
+            System.Diagnostics.Trace.TraceInformation("@start - public ObjectDataResponseAPI Delete(ObjectDataRequestAPI objectDataRequestAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
             // Ixnay on the implementay
             throw new NotImplementedException();
         }
 
         /// <summary>
-        /// This method is used to log the user into salesforce based on the provided credentials.
+        /// This method is used to log the user into docordo based on the provided credentials.
         /// </summary>
         public AuthenticatedWhoResultAPI Login(AuthenticationCredentialsAPI authenticationCredentialsAPI)
         {
-            AuthenticatedWhoResultAPI authenticatedUser = null;
-            
+            System.Diagnostics.Trace.TraceInformation("@start - public AuthenticatedWhoResultAPI Login(AuthenticationCredentialsAPI authenticationCredentialsAPI)");
+            Trace.TraceInformation(JsonConvert.SerializeObject(authenticationCredentialsAPI));
+                        
             if (authenticationCredentialsAPI == null)
             {
                 throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "AuthenticationCredentials object cannot be null.");
             }
 
-            if (string.IsNullOrWhiteSpace(authenticationCredentialsAPI.sessionToken))
+            if (string.IsNullOrWhiteSpace(authenticationCredentialsAPI.sessionToken) || string.IsNullOrWhiteSpace(authenticationCredentialsAPI.token))
             {
+                if (string.IsNullOrWhiteSpace(authenticationCredentialsAPI.loginUrl))
+                {
+                    throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "AuthenticationCredentials.loginUrl cannot be null or blank.");
+                }
+
                 if (string.IsNullOrWhiteSpace(authenticationCredentialsAPI.username))
                 {
                     throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "AuthenticationCredentials.Username cannot be null or blank.");
@@ -381,43 +301,26 @@ namespace ManyWho.Service.Docordo
                 {
                     throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "AuthenticationCredentials.Password cannot be null or blank.");
                 }
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(authenticationCredentialsAPI.sessionUrl))
-                {
-                    throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "AuthenticationCredentials.SessionUrl cannot be null or blank.");
-                }
-            }
+            }            
 
             // Assuming everything went ok so far
-            authenticatedUser = new AuthenticatedWhoResultAPI();
-            authenticatedUser.identityProvider = "https://lit.docordo.com";
+            AuthenticatedWhoResultAPI authenticatedUser = new AuthenticatedWhoResultAPI();            
 
             try
             {
-                if (authenticationCredentialsAPI.sessionToken != null &&
-                    authenticationCredentialsAPI.sessionToken.Trim().Length > 0)
-                {
-                    // The user has already logged into salesforce so we simply check them against the session
-                    //DocordoAPI.DocordoService.GetInstance().Login(authenticationCredentialsAPI., authenticationCredentialsAPI.sessionUrl);
-                }
-                else
-                {
-                    // Log the user into salesforce using the details provided
-                    DocordoAPI.Model.Domain.DocordoLoginResponse docordoLoginResponse = DocordoAPI.DocordoService.GetInstance().Login(authenticationCredentialsAPI.instanceUrl, authenticationCredentialsAPI.username, authenticationCredentialsAPI.password);
-                }
+                DocordoAPI.DocordoService.GetInstance().Logout(authenticationCredentialsAPI.loginUrl, authenticationCredentialsAPI.sessionToken, authenticationCredentialsAPI.token);
+                DocordoLoginResponse docordoLoginResponse = DocordoAPI.DocordoService.GetInstance().Login(authenticationCredentialsAPI.loginUrl, authenticationCredentialsAPI.username, authenticationCredentialsAPI.password);
+                
 
                 // LOAD THE PRINCIPAL DETAILS FROM docordo
                 //userInfoResult = sforceService.getUserInfo();//
 
-                // Looks like the credentials are OK, so we create an authenticated user object for this user
-                authenticatedUser.userId = string.Empty;
-                authenticatedUser.username = string.Empty;
-                authenticatedUser.token = string.Empty;
-                authenticatedUser.tenantName = string.Empty;
-                authenticatedUser.directoryId = string.Empty;
-                authenticatedUser.directoryName = string.Empty;
+                // Looks like the credentials are OK, so we create an authenticated user object for this user                
+                authenticatedUser.identityProvider = authenticationCredentialsAPI.loginUrl;
+                authenticatedUser.userId = docordoLoginResponse.EbikkoSessionId;
+                authenticatedUser.token = docordoLoginResponse.CookieJSESSIONID;
+                authenticatedUser.username = docordoLoginResponse.PrincipalDetails[0].Username;
+
                 authenticatedUser.status = ManyWhoConstants.AUTHENTICATED_USER_STATUS_AUTHENTICATED;
                 authenticatedUser.statusMessage = null;
             }
@@ -431,13 +334,52 @@ namespace ManyWho.Service.Docordo
             return authenticatedUser;
         }
 
+        private ObjectAPI CreateUserObject(IAuthenticatedWho authenticatedWho)
+        {
+            ObjectAPI userObject = null;
+
+            userObject = new ObjectAPI();
+            userObject.developerName = ManyWhoConstants.MANYWHO_USER_DEVELOPER_NAME;
+            userObject.properties = new List<PropertyAPI>();
+
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_ID, authenticatedWho.DirectoryId));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_NAME, authenticatedWho.DirectoryName));
+
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_COUNTRY, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_EMAIL, authenticatedWho.Email));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USERNAME, authenticatedWho.Email));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_FIRST_NAME, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LANGUAGE, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LAST_NAME, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LOCATION, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USER_ID, authenticatedWho.UserId));
+
+            return userObject;
+        }
+
+        /// <summary>
+        /// Utility method for creating new properties.
+        /// </summary>
+        private PropertyAPI CreateProperty(String developerName, String contentValue)
+        {
+            PropertyAPI propertyAPI = null;
+
+            propertyAPI = new PropertyAPI();
+            propertyAPI.developerName = developerName;
+            propertyAPI.contentValue = contentValue;
+
+            return propertyAPI;
+        }
+
+        #region SOCIAL
+
         /// <summary>
         /// This method is used to create a new activity stream in salesforce based on the provided configuration.
         /// </summary>
         public String CreateStream(IAuthenticatedWho authenticatedWho, SocialServiceRequestAPI socialServiceRequestAPI)
-        {            
+        {
             String streamId = null;
-                       
+
             return streamId;
         }
 
@@ -464,7 +406,7 @@ namespace ManyWho.Service.Docordo
         /// This method is used to get the list of stream followers in salesforce.
         /// </summary>
         public List<WhoAPI> GetStreamFollowers(IAuthenticatedWho authenticatedWho, String streamId, SocialServiceRequestAPI socialServiceRequest)
-        {            
+        {
             List<WhoAPI> whos = null;
 
             return whos;
@@ -475,7 +417,7 @@ namespace ManyWho.Service.Docordo
         /// </summary>
         public async Task<MessageListAPI> GetStreamMessages(IAuthenticatedWho authenticatedWho, String streamId, SocialServiceRequestAPI socialServiceRequest)
         {
-            MessageListAPI messageList = null;            
+            MessageListAPI messageList = null;
 
             return messageList;
         }
@@ -533,11 +475,12 @@ namespace ManyWho.Service.Docordo
         /// <summary>
         /// This method allows the user to search for users by name in chatter.
         /// </summary>
-        public async Task<List<MentionedUserAPI>> SearchUsersByName(IAuthenticatedWho authenticatedWho, String streamId, String name, SocialServiceRequestAPI socialServiceRequest)
-        {            
-            List<MentionedUserAPI> mentionedUsers = null;         
+        public async Task<List<MentionedWhoAPI>> SearchUsersByName(IAuthenticatedWho authenticatedWho, String streamId, String name, SocialServiceRequestAPI socialServiceRequest)
+        {
+            List<MentionedWhoAPI> mentionedUsers = null;
 
             return mentionedUsers;
         }
+        #endregion
     }
 }

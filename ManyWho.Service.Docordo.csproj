@@ -39,8 +39,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ManyWho.Flow.SDK">
-      <HintPath>..\..\ManyWho_Flow\ManyWho.Flow.SDK\bin\Debug\ManyWho.Flow.SDK.dll</HintPath>
+    <Reference Include="ManyWho.Flow.SDK, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>lib\ManyWho.Flow.SDK.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Data.Edm, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -135,24 +136,14 @@
   <ItemGroup>
     <Compile Include="Controllers\PluginDocordoController.cs" />
     <Compile Include="Docordo\DocordoDataSingleton.cs" />
+    <Compile Include="Docordo\DocordoInvokeSingleton.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\Canvas\CanvasApplication.cs" />
-    <Compile Include="Models\Canvas\CanvasClient.cs" />
-    <Compile Include="Models\Canvas\CanvasContext.cs" />
-    <Compile Include="Models\Canvas\CanvasEnvironment.cs" />
-    <Compile Include="Models\Canvas\CanvasEnvironmentDimensions.cs" />
-    <Compile Include="Models\Canvas\CanvasEnvironmentVersion.cs" />
-    <Compile Include="Models\Canvas\CanvasLinks.cs" />
-    <Compile Include="Models\Canvas\CanvasOrganization.cs" />
-    <Compile Include="Models\Canvas\CanvasRequest.cs" />
-    <Compile Include="Models\Canvas\CanvasUser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Docordo\DocordoServiceSingleton.cs" />
     <Compile Include="Utils\DateUtils.cs" />
     <Compile Include="Utils\DescribeUtils.cs" />
-    <Compile Include="Utils\CanvasUtils.cs" />
     <Compile Include="WorkflowRuleMessageHandler.cs" />
     <Compile Include="WorkflowRuleNotification.cs" />
   </ItemGroup>
@@ -161,6 +152,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Content Include="Global.asax" />
+    <Content Include="lib\ManyWho.Flow.SDK.dll" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>

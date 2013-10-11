@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Linq;
 using System.Net.Http;
-using System.Web;
 using System.Web.Http;
 
 namespace ManyWho.Service.Docordo
@@ -12,30 +8,6 @@ namespace ManyWho.Service.Docordo
     {
         public static void Register(HttpConfiguration config)
         {
-            // Salesforce Plugin
-            config.Routes.MapHttpRoute(
-                name: "PluginDocordoWorkflowRule",
-                routeTemplate: "plugins/api/docordo/1/workflowrules",
-                constraints: null,
-                defaults: new
-                {
-                    controller = "PluginDocordo"
-                },
-                handler: new WorkflowRuleMessageHandler() //assign our handler to intercept incoming POST request
-            );
-
-            config.Routes.MapHttpRoute(
-                name: "PluginDocordoCanvas",
-                routeTemplate: "plugins/api/docordo/1/canvas/{tenantId}/{flowId}/{playerUrl}",
-                defaults: new
-                {
-                    controller = "PluginDocordo",
-                    action = "Canvas",
-                    tenantId = RouteParameter.Optional,
-                    flowId = RouteParameter.Optional,
-                    playerUrl = RouteParameter.Optional
-                }
-            );
 
             config.Routes.MapHttpRoute(
                 name: "PluginDocordoDescribe",

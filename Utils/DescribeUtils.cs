@@ -22,7 +22,7 @@ namespace ManyWho.Service.Docordo
             describeValue.contentType = contentType;
             describeValue.developerName = developerName;
             describeValue.contentValue = contentValue;
-            describeValue.required = required;
+            describeValue.isRequired = required;
 
             return describeValue;
         }

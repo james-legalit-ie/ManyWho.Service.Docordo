@@ -1,6 +1,7 @@
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\ManyWho.Service.Salesforce.dll
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\ManyWho.Service.Salesforce.pdb
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\DocordoAPI.dll
+C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\ManyWho.Flow.SDK.dll
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\Microsoft.Data.Edm.dll
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\Microsoft.Data.OData.dll
 C:\Users\James\Documents\Visual Studio 2010\Projects\ManyWho_Service_Docordo\bin\Microsoft.Web.Infrastructure.dll

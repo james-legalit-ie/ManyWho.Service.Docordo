@@ -1,36 +1,17 @@
 ﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using System.Net;
-using System.Web;
-using System.Net.Http;
-using System.Net.Http.Formatting;
-using System.Web.Http;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using System.Web.Http;
 using ManyWho.Flow.SDK.Controller;
-using ManyWho.Flow.SDK.Utils;
-using ManyWho.Flow.SDK.Draw.Flow;
-using ManyWho.Flow.SDK.Draw.Content;
-using ManyWho.Flow.SDK.Draw.Elements;
-using ManyWho.Flow.SDK.Draw.Elements.UI;
-using ManyWho.Flow.SDK.Draw.Elements.Map;
-using ManyWho.Flow.SDK.Draw.Elements.Type;
-using ManyWho.Flow.SDK.Draw.Elements.Shared;
-using ManyWho.Flow.SDK.Run;
-using ManyWho.Flow.SDK.Run.State;
-using ManyWho.Flow.SDK.Run.Elements.UI;
-using ManyWho.Flow.SDK.Run.Elements.Map;
-using ManyWho.Flow.SDK.Run.Elements.Type;
-using ManyWho.Flow.SDK.Run.Elements.Config;
 using ManyWho.Flow.SDK.Describe;
+using ManyWho.Flow.SDK.Draw.Elements.Type;
+using ManyWho.Flow.SDK.Run.Elements.Config;
+using ManyWho.Flow.SDK.Run.Elements.Type;
 using ManyWho.Flow.SDK.Security;
 using ManyWho.Flow.SDK.Social;
+using ManyWho.Flow.SDK.Utils;
 using ManyWho.Service.Docordo;
-using ManyWho.Service.Docordo.Utils;
-using ManyWho.Service.Docordo.Models.Canvas;
 
 /*!
 
@@ -54,51 +35,6 @@ namespace ManyWho.Flow.Web.Controllers
     {
         public const String SETTING_SERVER_BASE_PATH = "Docordo.ServerBasePath";
 
-        [ActionName("Canvas")]
-        public HttpResponseMessage Canvas(String tenantId, String flowId, String playerUrl)
-        {
-            String redirectUrl = null;
-            String signedRequest = null;
-            CanvasRequest canvasRequest = null;
-            HttpResponseMessage response = null;
-
-            // Get the signed request from the form post
-            signedRequest = System.Web.HttpContext.Current.Request.Form["signed_request"];
-
-            // Grab the canvas request object from the post
-            // The secret needs to be stored somewhere - actually, it doesn't - we don't need the secret at all
-            canvasRequest = CanvasUtils.VerifyAndDecode(null, signedRequest, "6156156167154975556");
-
-            if (string.IsNullOrWhiteSpace(flowId))
-            {
-                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "A flow identifier is required.  Please pass in a parameter for \"flow-id\".");
-            }
-
-            if (string.IsNullOrWhiteSpace(tenantId))
-            {
-                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "A tenant identifier is required.  Please pass in a parameter for \"tenant-id\".");
-            }
-
-            if (string.IsNullOrWhiteSpace(playerUrl))
-            {
-                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "A player is required.  Please pass in a parameter for \"player-url\".");
-            }
-
-            // Construct the redirect url so the player knows what to do
-            redirectUrl = "";
-            redirectUrl += SettingUtils.GetStringSetting(SETTING_SERVER_BASE_PATH) + "/" + tenantId + "/play/" + playerUrl;
-            redirectUrl += "?session-token=" + canvasRequest.client.oauthToken;
-            redirectUrl += "&session-url=" + HttpUtility.HtmlEncode(canvasRequest.client.instanceUrl + canvasRequest.context.links.partnerUrl);
-
-            // Create the run url stuff using utils
-            redirectUrl = RunUtils.CompleteRunUrl(redirectUrl, Guid.Parse(flowId));
-
-            // Tell the caller to redirect back to the desired location
-            response = Request.CreateResponse(HttpStatusCode.RedirectMethod, redirectUrl);
-            response.Headers.Add("Location", redirectUrl);
-
-            return response;
-        }
 
         [HttpPost]
         [ActionName("Describe")]
@@ -123,7 +59,7 @@ namespace ManyWho.Flow.Web.Controllers
 
         [HttpPost]
         [ActionName("DescribeFields")]
-        public List<TypeElementFieldBindingAPI> DescribeFields(ObjectDataRequestAPI objectDataRequestAPI)
+        public List<TypeElementPropertyBindingAPI> DescribeFields(ObjectDataRequestAPI objectDataRequestAPI)
         {
             throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "DescribeFields - Not implemented.");
         }
@@ -167,7 +103,14 @@ namespace ManyWho.Flow.Web.Controllers
         [ActionName("GetUserInAuthorizationContext")]
         public ObjectDataResponseAPI GetUserInAuthorizationContext(ObjectDataRequestAPI objectDataRequestAPI)
         {
-            throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "GetUserInAuthorizationContext - Not implemented.");
+            try
+            {
+                return DocordoServiceSingleton.GetInstance().GetUserInAuthorizationContext(this.GetWho(), objectDataRequestAPI);
+            }
+            catch (Exception exception)
+            {
+                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, exception);
+            }            
         }
 
         [HttpPost]
@@ -188,7 +131,7 @@ namespace ManyWho.Flow.Web.Controllers
             catch (Exception exception)
             {
                 throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, exception);
-            }            
+            }
         }
 
         [HttpPost]
@@ -298,7 +241,7 @@ namespace ManyWho.Flow.Web.Controllers
 
         [HttpPost]
         [ActionName("SearchUsersByName")]
-        public Task<List<MentionedUserAPI>> SearchUsersByName(String streamId, String name, SocialServiceRequestAPI socialServiceRequest)
+        public Task<List<MentionedWhoAPI>> SearchUsersByName(String streamId, String name, SocialServiceRequestAPI socialServiceRequest)
         {
             throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "SearchUsersByName - Not implemented.");
         }

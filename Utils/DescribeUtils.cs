@@ -1,14 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using ManyWho.Flow.SDK;
 using ManyWho.Flow.SDK.Describe;
-using ManyWho.Flow.SDK.Draw.Elements.UI;
-using ManyWho.Flow.SDK.Draw.Elements.Type;
-using ManyWho.Flow.SDK.Run.Elements.UI;
-using ManyWho.Flow.SDK.Run.Elements.Config;
 using ManyWho.Flow.SDK.Run.Elements.Type;
+using ManyWho.Flow.SDK.Security;
 
 namespace ManyWho.Service.Docordo
 {
@@ -50,6 +45,43 @@ namespace ManyWho.Service.Docordo
             attributeObject.properties.Add(attributeProperty);
 
             return attributeObject;
+        }
+
+        public static ObjectAPI CreateUserObject(IAuthenticatedWho authenticatedWho)
+        {
+            ObjectAPI userObject = null;
+
+            userObject = new ObjectAPI();
+            userObject.developerName = ManyWhoConstants.MANYWHO_USER_DEVELOPER_NAME;
+            userObject.properties = new List<PropertyAPI>();
+
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_ID, authenticatedWho.DirectoryId));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_NAME, authenticatedWho.DirectoryName));
+
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_COUNTRY, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_EMAIL, authenticatedWho.Email));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USERNAME, authenticatedWho.Email));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_FIRST_NAME, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LANGUAGE, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LAST_NAME, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LOCATION, null));
+            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USER_ID, authenticatedWho.UserId));
+
+            return userObject;
+        }
+
+        /// <summary>
+        /// Utility method for creating new properties.
+        /// </summary>
+        public static PropertyAPI CreateProperty(String developerName, String contentValue)
+        {
+            PropertyAPI propertyAPI = null;
+
+            propertyAPI = new PropertyAPI();
+            propertyAPI.developerName = developerName;
+            propertyAPI.contentValue = contentValue;
+
+            return propertyAPI;
         }
     }
 }

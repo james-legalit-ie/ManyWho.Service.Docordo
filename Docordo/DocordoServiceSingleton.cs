@@ -80,7 +80,8 @@ namespace ManyWho.Service.Docordo
             {
                 throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "DescribeServiceRequest object cannot be null.");
             }
-           
+            
+            DescribeServiceInstallResponseAPI describeServiceInstallResponse = null;
             DescribeServiceActionResponseAPI describeServiceAction = null;
             DescribeServiceResponseAPI describeServiceResponse = null;
             
@@ -92,38 +93,41 @@ namespace ManyWho.Service.Docordo
             describeServiceResponse.culture.variant = null;
 
             describeServiceResponse.providesLogic = true;
+            describeServiceResponse.providesIdentity = true;
 
             describeServiceResponse.providesDatabase = false;            
             describeServiceResponse.providesViews = false;
-            describeServiceResponse.providesIdentity = true;
             describeServiceResponse.providesSocial = false;
             
             System.Diagnostics.Trace.TraceInformation("// If the user has provided these values as part of a re-submission, we can then go about configuring the rest of the service");
-            
             describeServiceResponse.actions = new List<DescribeServiceActionResponseAPI>();
 
-            System.Diagnostics.Trace.TraceInformation("// We have another message available under this service for creating simple tasks with no async");
+            // We have one message available under this service for creating tasks
             describeServiceAction = new DescribeServiceActionResponseAPI();
             describeServiceAction.uriPart = SERVICE_ACTION_LOGIN;
-            describeServiceAction.developerName = "New Matter";
-            describeServiceAction.developerSummary = "This action creates a matter in docordo.";
+            describeServiceAction.developerName = "Login";
+            describeServiceAction.developerSummary = "This action logs a user into docordo";
             describeServiceAction.isViewMessageAction = false;
             describeServiceAction.pageResponse = null;
 
-            System.Diagnostics.Trace.TraceInformation("// Create the inputs for the task creation");
+            // Create the inputs for the task creation
             describeServiceAction.serviceInputs = new List<DescribeValueAPI>();
-            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_DOMAIN, null, true));
-            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_USERNAME, null, true));
-            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_VALUE_DOCORDO_PASSWORD, null, true));
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, "DocordoDomain", null, true));
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, "DocordoUsername", null, true));
+            describeServiceAction.serviceInputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_PASSWORD, "DocordoPassword", null, true));            
 
-            System.Diagnostics.Trace.TraceInformation("// Create the outputs for the task creation");
+            // Create the outputs for the task creation
             describeServiceAction.serviceOutputs = new List<DescribeValueAPI>();
-            describeServiceAction.serviceOutputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_STRING, SERVICE_OUTPUT_ID, null, false));
+            describeServiceAction.serviceOutputs.Add(DescribeUtils.CreateDescribeValue(ManyWhoConstants.CONTENT_TYPE_BOOLEAN, "NodeId", null, false));            
 
-            System.Diagnostics.Trace.TraceInformation("// Add the task action to the response");
+            // Add the task action to the response
             describeServiceResponse.actions.Add(describeServiceAction);
-                
+
+            describeServiceInstallResponse = new DescribeServiceInstallResponseAPI();
+            describeServiceInstallResponse.typeElements = new List<TypeElementRequestAPI>();
             
+            // Assign the installation object to our main describe response
+            describeServiceResponse.install = describeServiceInstallResponse;
 
             return describeServiceResponse;
         }
@@ -213,14 +217,20 @@ namespace ManyWho.Service.Docordo
             Trace.TraceInformation(JsonConvert.SerializeObject(authenticatedWho));
             Trace.TraceInformation(JsonConvert.SerializeObject(objectDataRequestAPI));
 
-            ObjectAPI userObject = CreateUserObject(authenticatedWho);
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_STATUS,
+            System.Diagnostics.Trace.TraceInformation("A");
+            ObjectAPI userObject = DescribeUtils.CreateUserObject(authenticatedWho);
+
+            System.Diagnostics.Trace.TraceInformation("B");
+            userObject.properties.Add(DescribeUtils.CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_STATUS,
                 authenticatedWho.UserId == ManyWhoConstants.AUTHENTICATED_USER_PUBLIC_USER_ID ?
                     ManyWhoConstants.AUTHORIZATION_STATUS_NOT_AUTHORIZED : ManyWhoConstants.AUTHORIZATION_STATUS_AUTHORIZED));
 
+            System.Diagnostics.Trace.TraceInformation("C");
             ObjectDataResponseAPI objectDataResponseAPI = new ObjectDataResponseAPI();
+            objectDataResponseAPI.objectData = new List<ObjectAPI>();
             objectDataResponseAPI.objectData.Add(userObject);
 
+            System.Diagnostics.Trace.TraceInformation("D");
             return objectDataResponseAPI;
         }
 
@@ -334,42 +344,6 @@ namespace ManyWho.Service.Docordo
             return authenticatedUser;
         }
 
-        private ObjectAPI CreateUserObject(IAuthenticatedWho authenticatedWho)
-        {
-            ObjectAPI userObject = null;
-
-            userObject = new ObjectAPI();
-            userObject.developerName = ManyWhoConstants.MANYWHO_USER_DEVELOPER_NAME;
-            userObject.properties = new List<PropertyAPI>();
-
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_ID, authenticatedWho.DirectoryId));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_DIRECTORY_NAME, authenticatedWho.DirectoryName));
-
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_COUNTRY, null));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_EMAIL, authenticatedWho.Email));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USERNAME, authenticatedWho.Email));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_FIRST_NAME, null));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LANGUAGE, null));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LAST_NAME, null));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_LOCATION, null));
-            userObject.properties.Add(CreateProperty(ManyWhoConstants.MANYWHO_USER_PROPERTY_USER_ID, authenticatedWho.UserId));
-
-            return userObject;
-        }
-
-        /// <summary>
-        /// Utility method for creating new properties.
-        /// </summary>
-        private PropertyAPI CreateProperty(String developerName, String contentValue)
-        {
-            PropertyAPI propertyAPI = null;
-
-            propertyAPI = new PropertyAPI();
-            propertyAPI.developerName = developerName;
-            propertyAPI.contentValue = contentValue;
-
-            return propertyAPI;
-        }
 
         #region SOCIAL
 

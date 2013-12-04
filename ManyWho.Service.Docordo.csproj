@@ -39,6 +39,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DocordoAPI, Version=0.8.5.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Visual Studio 2012\Projects\DocordoAPI\DocordoAPI\bin\Release\DocordoAPI.dll</HintPath>
+    </Reference>
     <Reference Include="ManyWho.Flow.SDK, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>lib\ManyWho.Flow.SDK.dll</HintPath>
@@ -135,6 +139,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\PluginDocordoController.cs" />
+    <Compile Include="Docordo\Data\NodeTypeData\DocordoAdHocDocumentData.cs" />
+    <Compile Include="Docordo\Data\NodeTypeData\DocordoEntityData.cs" />
+    <Compile Include="Docordo\Data\NodeTypeData\DocordoFolderData.cs" />
+    <Compile Include="Docordo\Data\NodeTypeData\DocordoMatterData.cs" />
     <Compile Include="Docordo\DocordoDataSingleton.cs" />
     <Compile Include="Docordo\DocordoInvokeSingleton.cs" />
     <Compile Include="Global.asax.cs">
@@ -152,6 +160,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Content Include="Global.asax" />
+    <Content Include="lib\DocordoAPI.dll" />
     <Content Include="lib\ManyWho.Flow.SDK.dll" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -178,12 +187,6 @@
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\DocordoAPI\DocordoAPI.csproj">
-      <Project>{b5a49b4d-d462-4bd9-85ba-d0c82fa67f07}</Project>
-      <Name>DocordoAPI</Name>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

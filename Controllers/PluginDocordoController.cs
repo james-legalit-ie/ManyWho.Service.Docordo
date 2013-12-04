@@ -68,7 +68,14 @@ namespace ManyWho.Flow.Web.Controllers
         [ActionName("Invoke")]
         public Task<ServiceResponseAPI> Invoke(String actionName, ServiceRequestAPI serviceRequest)
         {
-            throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "Invoke - Not implemented.");
+            try
+            {
+                return DocordoServiceSingleton.GetInstance().Invoke(this.GetWho(), actionName, serviceRequest);
+            }
+            catch (Exception exception)
+            {
+                throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, exception);
+            }
         }
 
         [HttpPost]

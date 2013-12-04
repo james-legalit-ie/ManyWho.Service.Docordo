@@ -90,7 +90,7 @@ namespace ManyWho.Service.Docordo
                 taskObjects = new List<ObjectAPI>();
                 taskObjects.Add(taskObject);
                 
-                // Save the task object to salesforce
+                // Save the task object to docordo
                 DocordoLoginResponse docordoLoginResponse = DocordoAPI.DocordoService.GetInstance().Login(authenticationUrl, username, password);
 
                 taskObjects = DocordoDataSingleton.GetInstance().CreateMatter(authenticationUrl, docordoLoginResponse.EbikkoSessionId, docordoLoginResponse.CookieJSESSIONID, recordNumber, description);

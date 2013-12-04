@@ -1,15 +1,17 @@
 ﻿namespace ManyWho.Service.Docordo
 {
     using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using DocordoAPI;
-using DocordoAPI.Model.Bean;
-using DocordoAPI.Model.Domain;
-using ManyWho.Flow.SDK;
-using ManyWho.Flow.SDK.Draw.Elements.Type;
-using ManyWho.Flow.SDK.Run.Elements.Type;
-using Newtonsoft.Json;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using DocordoAPI;
+    using DocordoAPI.Model.Bean;
+    using DocordoAPI.Model.Bean.Create;
+    using DocordoAPI.Model.Domain;
+    using ManyWho.Flow.SDK;
+    using ManyWho.Flow.SDK.Draw.Elements.Type;
+    using ManyWho.Flow.SDK.Run.Elements.Type;
+    using ManyWho.Service.Docordo.Data.NodeTypeData;
+    using Newtonsoft.Json;
 
     public class DocordoDataSingleton
     {
@@ -27,22 +29,30 @@ using Newtonsoft.Json;
             return docordoDataSingleton;
         }
 
-        public List<ObjectAPI> CreateMatter(string authenticationUrl, string ebikkoSessionId, string cookieJSESSIONID, string recordNumber, string description) {
-            DocordoNodeCreateResponse docordoNodeCreateResponse = DocordoAPI.DocordoService.GetInstance().CreateMatter(authenticationUrl, ebikkoSessionId, cookieJSESSIONID, new DocordoCreateMatterBean() { ContainerRecordNumber = recordNumber, Description = description });            
-            throw new NotImplementedException();
+        public List<ObjectAPI> CreateMatter(string authenticationUrl, string ebikkoSessionId, string cookieJSESSIONID, string recordNumber, string description)
+        {
+            DocordoNodeCreateResponse docordoNodeCreateResponse = DocordoAPI.DocordoService.GetInstance().CreateMatter<DocordoMatterData>(authenticationUrl, ebikkoSessionId, cookieJSESSIONID, DocordoCreateRecordBean.New(string.Empty, recordNumber, description, string.Empty), DocordoMatterData.New(description));
+            List<ObjectAPI> returnedObjects = new List<ObjectAPI>();
+            ObjectAPI objectAPI = new ObjectAPI();
+            objectAPI.developerName = "NodeId";
+            objectAPI.externalId = docordoNodeCreateResponse.NodeId;
+
+            returnedObjects.Add(objectAPI);
+
+            return returnedObjects;
         }
 
         public List<TypeElementRequestAPI> GetTypeElements(String authenticationUrl, String username, String password, String ebikkoSessionID, String jSessionID)
         {
             List<TypeElementRequestAPI> typeElements = new List<TypeElementRequestAPI>();
 
-            DocordoService docordoService = DocordoService.GetInstance();
+            IDocordoService docordoService = DocordoService.GetInstance();
 
             Trace.TraceInformation("// Login to the service");
             DocordoLoginResponse docordoLoginResponse = docordoService.Login(authenticationUrl, username, password);
 
             System.Diagnostics.Trace.TraceInformation("// Get all the objects available in the org");
-            DocordoNodeTypeListResponse describeGlobalResult = docordoService.ListNodeTypes(authenticationUrl, docordoLoginResponse.EbikkoSessionId, docordoLoginResponse.CookieJSESSIONID);
+            DocordoNodeTypeListResponse describeGlobalResult = docordoService.LoadNodeTypes(authenticationUrl, docordoLoginResponse.EbikkoSessionId, docordoLoginResponse.CookieJSESSIONID);
 
             Trace.TraceInformation("// Get the names of all of the objects so we can then do a full object query");
 

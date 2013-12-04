@@ -164,7 +164,7 @@ namespace ManyWho.Service.Docordo
 
             ServiceResponseAPI serviceResponse = null;
 
-            if (action == null || action.Trim().Length == 0)
+            if (string.IsNullOrEmpty(action))
             {
                 throw ErrorUtils.GetWebException(HttpStatusCode.BadRequest, "Action cannot be null or blank.");
             }
